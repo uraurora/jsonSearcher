@@ -1,79 +1,61 @@
 package parser.impl;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import lombok.Data;
-import parser.Pair;
+import enums.SearchType;
 
-import java.util.Collection;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static util.Options.emptyString;
 
 /**
  * @author : gaoxiaodong04
  * @program : jsonSearcher
- * @date : 2021-03-12 17:37
+ * @date : 2021-03-14 21:50
  * @description :
  */
 public class JsonSearcher {
 
-    private String json;
+    private final Json json;
 
-    private boolean needPrefix;
+    private final List<JsonPair> pairs;
 
-    public JsonSearcher(String json, boolean needPrefix){
+    private final SearchType type;
+
+    public JsonSearcher(Json json, SearchType type) {
         this.json = json;
-        this.needPrefix = needPrefix;
+        this.type = type;
+        this.pairs = this.type == SearchType.BFS ? this.json.bfs():this.json.dfs();
     }
 
-    public void dfs(){
-
+    public String getByKey(String key){
+        return listByKeySelector(k->k.equalsIgnoreCase(key))
+                .stream()
+                .map(JsonPair::getValue)
+                .findFirst()
+                .orElse(emptyString);
     }
 
-    public void bfs(){
-
+    public List<String> listByKey(String key){
+        return listByKeySelector(k->k.equalsIgnoreCase(key))
+                .stream()
+                .map(JsonPair::getValue)
+                .collect(Collectors.toList());
     }
 
-    protected static void dfsHelper(InternalPair pair,
-                                    boolean needPrefix,
-                                    String splitter,
-                                    Collection<JsonPair> collection){
-        final String key = pair.getKey();
-        final JsonElement element = pair.getValue();
-        if (element != null && !element.isJsonNull()) {
-            if (element.isJsonPrimitive()) {
-                collection.add(JsonPair.of(key, element.getAsString()));
-            } else if (element.isJsonArray()) {
-                for (JsonElement jsonElement : element.getAsJsonArray()) {
-                    dfsHelper(InternalPair.of(key, jsonElement), needPrefix, splitter, collection);
-                }
-            } else if (element.isJsonObject()) {
-                element.getAsJsonObject().entrySet().forEach(e -> {
-                    final String key1 = (needPrefix)? key + splitter + e.getKey() : e.getKey();
-                    final JsonElement value = e.getValue();
-                    dfsHelper(InternalPair.of(key1, value), needPrefix, splitter, collection);
-                });
-            }
-        }
+    public List<JsonPair> listByKeySelector(Predicate<? super String> keySelector){
+        return pairs.stream()
+                .filter(p->keySelector.test(p.getKey()))
+                .collect(Collectors.toList());
     }
 
-    @Data(staticConstructor = "of")
-    protected static class InternalPair implements Pair<String, JsonElement> {
-
-        private final String key;
-
-        private final JsonElement value;
+    public List<JsonPair> listByValueSelector(Predicate<? super String> valueSelector){
+        return pairs.stream()
+                .filter(p->valueSelector.test(p.getValue()))
+                .collect(Collectors.toList());
     }
 
-    protected static void bfsHelper(){
-
+    public static JsonSearcher from(Json json, SearchType type) {
+        return new JsonSearcher(json, type);
     }
-
-    protected static boolean checkJson(String str){
-        try {
-            final JsonElement parse = JsonParser.parseString(str);
-            return !parse.isJsonNull() && (parse.isJsonObject() || parse.isJsonArray());
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
 }
