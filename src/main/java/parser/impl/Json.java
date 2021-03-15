@@ -31,12 +31,16 @@ public class Json {
 
     private JsonElement element;
 
-    public Json(String json, boolean needPrefix, String splitter){
-        this.json = json;
-        this.needPrefix = needPrefix;
+    public Json(JsonBuilder builder){
+        this.json = builder.json;
+        this.needPrefix = builder.needPrefix;
         checkJson(this.json);
-        this.splitter = splitter;
+        this.splitter = builder.splitter;
         this.element = JsonParser.parseString(json);
+    }
+
+    public static JsonBuilder builder() {
+        return new JsonBuilder();
     }
 
     public Stream<JsonPair> dfsStream(){
@@ -135,7 +139,7 @@ public class Json {
         private final JsonElement value;
     }
 
-    protected static boolean checkJson(String str){
+    protected static boolean isJson(String str){
         try {
             final JsonElement parse = JsonParser.parseString(str);
             return !parse.isJsonNull() && (parse.isJsonObject() || parse.isJsonArray());
@@ -144,4 +148,38 @@ public class Json {
         }
     }
 
+    protected static void checkJson(String str){
+        if(!isJson(str)){
+            throw new IllegalArgumentException("the args string is not json format");
+        }
+    }
+
+    public static final class JsonBuilder {
+        private String json;
+        private boolean needPrefix = false;
+        private String splitter = ".";
+
+        private JsonBuilder() {
+        }
+
+        public JsonBuilder withJson(String json) {
+            this.json = json;
+            return this;
+        }
+
+        public JsonBuilder withPrefix() {
+            this.needPrefix = true;
+            return this;
+        }
+
+        public JsonBuilder withSplitter(String splitter) {
+            this.splitter = splitter;
+            return this;
+        }
+
+
+        public Json build() {
+            return new Json(this);
+        }
+    }
 }
