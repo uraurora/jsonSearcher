@@ -1,10 +1,12 @@
 package parser.impl;
 
+import enums.SearchType;
 import org.junit.Test;
 
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static util.Options.setOf;
 
 public class JsonTest {
 
@@ -25,7 +27,7 @@ public class JsonTest {
     }
 
     @Test
-    public void jsonTest(){
+    public void jsonDfsWithPrefixTest(){
         final String url = Json.builder()
                 .withJson(page)
                 .withPrefix()
@@ -38,16 +40,88 @@ public class JsonTest {
     }
 
     @Test
+    public void jsonDfsWithNoPrefixTest(){
+        final String url = Json.builder()
+                .withJson(page)
+                .build()
+                .searcher()
+                .getByKey("avatar_url");
+
+        assertEquals("https://user-platform-oss.kujiale.com/avatars/2020/10/04/SYNDQ5DI4CQTUZ4XLQM6YPY8",
+                url);
+    }
+
+    @Test
+    public void jsonBfsWithPrefixTest(){
+        final String url = Json.builder()
+                .withJson(page)
+                .withPrefix()
+                .build()
+                .searcher(SearchType.BFS)
+                .getByKey("data.list.user.avatar_url");
+
+        assertEquals("https://user-platform-oss.kujiale.com/avatars/2020/10/04/SYNDQ5DI4CQTUZ4XLQM6YPY8",
+                url);
+    }
+
+    @Test
+    public void jsonBfsWithNoPrefixTest(){
+        final String url = Json.builder()
+                .withJson(page)
+                .build()
+                .searcher(SearchType.BFS)
+                .getByKey("avatar_url");
+
+        assertEquals("https://user-platform-oss.kujiale.com/avatars/2020/10/04/SYNDQ5DI4CQTUZ4XLQM6YPY8",
+                url);
+    }
+
+    @Test
+    public void bfsWithNoPrefixTest(){
+        System.out.println(Json.builder()
+                .withJson(page)
+                .build()
+                .bfs());
+    }
+
+    @Test
+    public void bfsWithPrefixTest(){
+        System.out.println(Json.builder()
+                .withPrefix()
+                .withJson(page)
+                .build()
+                .bfs());
+    }
+
+    @Test
+    public void withPrefixEqualsTest(){
+        final Json build1 = Json.builder()
+                .withPrefix()
+                .withJson(page)
+                .build();
+        assertTrue(build1.bfs().containsAll(build1.dfs()));
+        assertTrue(build1.dfs().containsAll(build1.bfs()));
+    }
+
+    @Test
+    public void withNoPrefixEqualsTest(){
+        final Json build2 = Json.builder()
+                .withJson(page)
+                .build();
+        assertTrue(build2.bfs().containsAll(build2.dfs()));
+        assertTrue(build2.dfs().containsAll(build2.bfs()));
+    }
+
+    @Test
     public void jsonSearchTest(){
         final List<SearchSummary> summary = Json.builder()
                 .withJson(page)
                 .withPrefix()
                 .build()
                 .searcher()
-                .addSelector(null)
                 .summary();
-
-
     }
+
+
 
 }

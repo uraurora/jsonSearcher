@@ -44,9 +44,7 @@ public class Json {
     }
 
     public Stream<JsonPair> dfsStream(){
-        final List<JsonPair> res = listOf();
-        dfsHelper(InternalPair.of(emptyString, element), needPrefix, splitter, res);
-        return res.stream();
+        return dfs().stream();
     }
 
     public List<JsonPair> dfs(){
@@ -56,11 +54,11 @@ public class Json {
     }
 
     public List<JsonPair> bfs(){
-        return bfsHelper(element, splitter);
+        return bfsHelper(element, needPrefix, splitter);
     }
 
     public Stream<JsonPair> bfsStream(){
-        return bfsHelper(element, splitter).stream();
+        return bfs().stream();
     }
 
     public JsonSearcher searcher(){
@@ -71,9 +69,8 @@ public class Json {
         return JsonSearcher.from(this, type);
     }
 
-    protected static List<JsonPair> bfsHelper(JsonElement element, String splitter){
+    protected static List<JsonPair> bfsHelper(JsonElement element, boolean needPrefix, String splitter){
         final List<JsonPair> res = listOf();
-        final Set<InternalPair> set = setOf(InternalPair.of("", element));
         final Deque<InternalPair> deque = buildDeque(q->q.add(InternalPair.of("", element)));
 
         while(!deque.isEmpty()){
@@ -85,20 +82,15 @@ public class Json {
                 if(jsonValue.isJsonArray()){
                     for (JsonElement jsonElement : jsonValue.getAsJsonArray()) {
                         final InternalPair pair = InternalPair.of(jsonKey, jsonElement);
-                        if(!set.contains(pair)){
-                            deque.addLast(pair);
-                            set.add(pair);
-                        }
+                        deque.addLast(pair);
+
                     }
                 }else if(jsonValue.isJsonObject()){
                     jsonValue.getAsJsonObject().entrySet().forEach(e -> {
                         final JsonElement value = e.getValue();
-                        final String key = StringUtils.isNotBlank(jsonKey)? jsonKey + splitter + e.getKey() : e.getKey();
+                        final String key = needPrefix && StringUtils.isNotBlank(jsonKey)? jsonKey + splitter + e.getKey() : e.getKey();
                         final InternalPair pair = InternalPair.of(key, value);
-                        if(!set.contains(pair)){
-                            deque.addLast(pair);
-                            set.add(pair);
-                        }
+                        deque.addLast(pair);
                     });
                 }else if(jsonValue.isJsonPrimitive()){
                     res.add(JsonPair.of(jsonKey, jsonValue.getAsString()));
